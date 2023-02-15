@@ -7,11 +7,27 @@ type StartState = {
   isReStart: boolean;
 };
 
+type ResultState = {
+  computerInput: string;
+  userInput: string;
+  result: number | null;
+};
+
 function App() {
+  /** 대결 시작 후 잔여 시간 state */
   const [remainingTime, setRemainingTime] = useState<number>(3);
+
+  /** 대결 시작 여부 state */
   const [start, setStart] = useState<StartState>({
     isStart: false,
     isReStart: false,
+  });
+
+  /** 지영: 가위바위보 결과 state */
+  const [roundResult, setRoundResult] = useState<ResultState>({
+    computerInput: "",
+    userInput: "",
+    result: null,
   });
 
   /** 지영: 대결 / 재대결 버튼 클릭시 실행 Hook */
@@ -70,6 +86,7 @@ function App() {
           activeLife={1}
           isComputer
           remainingTime={remainingTime}
+          setRoundResult={setRoundResult}
         />
       </Styled.BattleGround>
       {/*

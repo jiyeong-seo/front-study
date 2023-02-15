@@ -1,16 +1,35 @@
 import * as Styled from "./BattleChoice.style";
 import { HandPaper, HandRock, HandScissors } from "@images/index";
 
-type BattleChoiceProps = {
-  setUserInput: React.Dispatch<React.SetStateAction<string | null>>;
+type Input = {
+  input: string | null;
+  image: string | null;
 };
 
-const BattleChoice: React.FC<BattleChoiceProps> = ({ setUserInput }) => {
+type InputValues = {
+  user: { input: string | null; image: string | null };
+  computer: { input: string | null; image: string | null };
+};
+
+type BattleChoiceProps = {
+  setUserInput: React.Dispatch<React.SetStateAction<Input | null>>;
+  setInputValues: React.Dispatch<React.SetStateAction<InputValues>>;
+};
+
+const BattleChoice: React.FC<BattleChoiceProps> = ({
+  setUserInput,
+  setInputValues,
+}) => {
   return (
     <Styled.Container>
       <Styled.RadioWrapper
         onClick={() => {
-          setUserInput(() => HandScissors);
+          setUserInput(() => {
+            return { image: HandScissors, input: "가위" };
+          });
+          setInputValues((prev) => {
+            return { ...prev, user: { image: HandScissors, input: "가위" } };
+          });
         }}
       >
         <input
@@ -24,7 +43,12 @@ const BattleChoice: React.FC<BattleChoiceProps> = ({ setUserInput }) => {
 
       <Styled.RadioWrapper
         onClick={() => {
-          setUserInput(() => HandRock);
+          setUserInput(() => {
+            return { image: HandRock, input: "바위" };
+          });
+          setInputValues((prev) => {
+            return { ...prev, user: { image: HandRock, input: "바위" } };
+          });
         }}
       >
         <input
@@ -38,7 +62,12 @@ const BattleChoice: React.FC<BattleChoiceProps> = ({ setUserInput }) => {
 
       <Styled.RadioWrapper
         onClick={() => {
-          setUserInput(() => HandPaper);
+          setUserInput(() => {
+            return { image: HandPaper, input: "보" };
+          });
+          setInputValues((prev) => {
+            return { ...prev, user: { image: HandPaper, input: "보" } };
+          });
         }}
       >
         <input
