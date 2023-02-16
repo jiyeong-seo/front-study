@@ -1,6 +1,10 @@
 import styled from "styled-components";
 import Colors from "./constants/Colors";
 
+type Result = {
+  result: string;
+};
+
 export const Container = styled.main`
   display: flex;
   flex-direction: column;
@@ -26,7 +30,7 @@ export const CountDownNumber = styled.strong`
   font-size: 32px;
 `;
 
-export const GameControlButton = styled.button`
+export const GameControlButton = styled.button<Result>`
   width: 300px;
   height: 50px;
 
@@ -34,7 +38,10 @@ export const GameControlButton = styled.button`
 
   border-radius: 6px;
 
-  background-color: ${Colors.blue50};
+  background-color: ${({ result }) => {
+    if (result === "reset") return Colors.red;
+    else return Colors.blue50;
+  }};
 
   font-size: 18px;
   color: white;

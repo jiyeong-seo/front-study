@@ -1,95 +1,118 @@
 import BattleChoice from "./BattleChoice";
 import * as Styled from "./BattleCounter.style";
 import Hearts from "./Hearts";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { HandPaper, HandRock, HandScissors, Question } from "@images/index";
 
 type ResultState = {
   computerInput: string;
   userInput: string;
-  result: number | null;
+  result: string | null;
+};
+
+type InputValuesState = {
+  user: { input: string | null; image: string | null };
+  computer: { input: string | null; image: string | null };
+};
+
+type StartState = {
+  isStart: boolean;
+  isReStart: boolean;
+  reset: boolean;
 };
 
 type BattleCounterProps = {
   activeLife: number;
   isComputer?: boolean;
   remainingTime?: number;
-  setRoundResult?: React.Dispatch<React.SetStateAction<ResultState>>;
-};
-
-type Input = {
-  input: string | null;
-  image: string | null;
-};
-
-type InputValues = {
-  user: { input: string | null; image: string | null };
-  computer: { input: string | null; image: string | null };
+  inputValues: InputValuesState;
+  setRoundResult: React.Dispatch<React.SetStateAction<ResultState>>;
+  setInputValues: React.Dispatch<React.SetStateAction<InputValuesState>>;
+  setStart: React.Dispatch<React.SetStateAction<StartState>>;
+  start: StartState;
 };
 
 const BattleCounter = ({
   activeLife,
   isComputer = false,
   remainingTime,
-}: BattleCounterProps) => {
-  /** 지영:가위/바위/보 state */
-  // const [userInput, setUserInput] = useState<string | null>(null);
-  const [userInput, setUserInput] = useState<Input | null>(null);
-  /** 지영:Computer state */
-  const [computerInput, setComputerInput] = useState<Input | null>(null);
-  /** 지영: Input 관리 state */
-  const [inputValues, setInputValues] = useState<InputValues>({
-    user: { input: null, image: null },
-    computer: { input: null, image: null },
-  });
+  inputValues,
+  setRoundResult,
+  setInputValues,
+  setStart,
+  start,
+}: BattleCounterProps): JSX.Element => {
+  /** Results change function */
+  const setResult = (
+    computerInput: string,
+    userInput: string,
+    result: string
+  ) => {
+    // Round 결과
+    setRoundResult((prev) => {
+      return {
+        ...prev,
+        computerInput,
+        userInput,
+        result,
+      };
+    });
+  };
 
-  /** 컴퓨터가 랜덤 가위바위보 선택시 결과 출력 Hook */
-  // null이 아니라면 -> 그 때 if문 돌려서 roundResult에 값을 넣기
+  /** 컴퓨터 가위바위보 선택 결과 출력 */
   useEffect(() => {
-    console.log("computer =>", inputValues.computer);
-    console.log("user => ", inputValues.user);
-    if (computerInput) {
-      // if (userInput?.input === "가위") {
-      //   if (computerInput?.input === "보") {
-      //     console.log("이김");
-      //   } else if (computerInput?.input === "가위") {
-      //     console.log("비김");
-      //   } else {
-      //     console.log("짐");
-      //   }
-      // }
+    if (inputValues?.computer.input && start.isStart) {
+      if (inputValues?.user.input === "가위") {
+        if (inputValues?.computer.input === "보!") {
+          setResult("paper", "scissors", "Win");
+        } else if (inputValues?.computer.input === "가위") {
+          setResult("scissors", "scissors", "Draw");
+        } else {
+          setResult("rock", "scissors", "Lose");
+        }
+      } else if (inputValues?.user.input === "바위") {
+        if (inputValues?.computer.input === "가위") {
+          setResult("sicssors", "rock", "Win");
+        } else if (inputValues?.computer.input === "바위") {
+          setResult("rock", "rock", "Draw");
+        } else {
+          setResult("paper", "rock", "Lose");
+        }
+      } else {
+        if (inputValues?.computer.input === "바위") {
+          setResult("rock", "paper", "Win");
+        } else if (inputValues?.computer.input === "보") {
+          setResult("paper", "paper", "Draw");
+        } else {
+          setResult("sicssors", "paper", "Lose");
+        }
+      }
+      setStart((prev) => {
+        return { ...prev, isStart: false };
+      });
     }
-  }, [inputValues]);
+  }, [inputValues, start.isReStart]);
 
-  /** 지영: 타이머 종료시 컴퓨터 랜덤 가위바위보 실행 Hook */
+  /** 타이머 종료시 컴퓨터 랜덤 가위바위보 실행 */
   useEffect(() => {
     if (remainingTime === 0) {
       let randomNumber = Math.random();
 
       if (randomNumber < 0.33) {
-        setComputerInput(() => {
-          return { image: HandScissors, input: "가위" };
-        });
         setInputValues((prev) => {
           return { ...prev, computer: { image: HandScissors, input: "가위" } };
         });
       } else if (randomNumber < 0.66) {
-        setComputerInput(() => {
-          return { image: HandRock, input: "바위" };
-        });
         setInputValues((prev) => {
           return { ...prev, computer: { image: HandRock, input: "바위" } };
         });
       } else {
-        setComputerInput(() => {
-          return { image: HandPaper, input: "보" };
-        });
         setInputValues((prev) => {
           return { ...prev, computer: { image: HandPaper, input: "보" } };
         });
       }
     }
-  }, [remainingTime]);
+  }, [remainingTime, setInputValues]);
 
   return (
     <Styled.Container>
@@ -103,24 +126,16 @@ const BattleCounter = ({
        * 컴퓨터는 카운트다운이 끝나면 컴퓨터가 고른 랜덤한 선택지가 컴퓨터 파트에 보여져야 합니다.
        */}
       <Styled.BattleChoiceImg
-        // 지영: 초기 상태에서는 You도 Question props가 전달되어야 한다
+        // : 초기 상태에서는 You도 Question props가 전달되어야 한다
         src={
           isComputer
-            ? inputValues.computer?.image
-              ? inputValues.computer?.image
+            ? inputValues?.computer?.image
+              ? inputValues?.computer?.image
               : Question
-            : inputValues.user?.image
-            ? inputValues.user?.image
+            : inputValues?.user?.image
+            ? inputValues?.user?.image
             : Question
-          // isComputer
-          //   ? computerInput?.image
-          //     ? computerInput?.image
-          //     : Question
-          //   : userInput?.image
-          //   ? userInput?.image
-          //   : Question
         }
-        // 지영: state 전달시 해당 값으로 변경되게 하면 좋을듯?
         alt="가위바위보 이미지"
       />
 
@@ -134,16 +149,13 @@ const BattleCounter = ({
        * 재대결 버튼을 클릭하게 되면 다시 `생각중...` 으로 보여져야 합니다.
        */}
       {isComputer ? (
-        inputValues.computer?.input ? (
-          inputValues.computer?.input
+        inputValues?.computer?.input ? (
+          inputValues?.computer?.input
         ) : (
           "생각중..."
         )
       ) : (
-        <BattleChoice
-          setUserInput={setUserInput}
-          setInputValues={setInputValues}
-        />
+        <BattleChoice setInputValues={setInputValues} />
       )}
     </Styled.Container>
   );

@@ -5,33 +5,134 @@ import { useState, useEffect } from "react";
 type StartState = {
   isStart: boolean;
   isReStart: boolean;
+  reset: boolean;
 };
 
 type ResultState = {
   computerInput: string;
   userInput: string;
-  result: number | null;
+  result: string | null;
+};
+
+type InputValuesState = {
+  user: { input: string | null; image: string | null };
+  computer: { input: string | null; image: string | null };
 };
 
 function App() {
-  /** 대결 시작 후 잔여 시간 state */
+  /** 잔여 시간 */
   const [remainingTime, setRemainingTime] = useState<number>(3);
-
-  /** 대결 시작 여부 state */
+  /** 대결 시작 여부 */
   const [start, setStart] = useState<StartState>({
     isStart: false,
     isReStart: false,
+    reset: false,
   });
-
-  /** 지영: 가위바위보 결과 state */
+  /** 가위바위보 결과 */
   const [roundResult, setRoundResult] = useState<ResultState>({
     computerInput: "",
     userInput: "",
     result: null,
   });
+  /** Input values */
+  const [inputValues, setInputValues] = useState<InputValuesState>({
+    user: { input: null, image: null },
+    computer: { input: null, image: null },
+  });
+  /** Round Result 기록 리스트 */
+  const [roundResults, setRoundResults] = useState<Array<ResultState | null>>(
+    JSON.parse(localStorage.getItem("roundResult") || "[]")
+  );
+  /** Active Lifes */
+  const [userLife, setUserLife] = useState<number>(
+    JSON.parse(localStorage.getItem("userLife") || "3")
+  );
+  const [computerLife, setComputerLife] = useState<number>(
+    JSON.parse(localStorage.getItem("computerLife") || "3")
+  );
+  /** 대결 버튼 클릭시 실행 handler */
+  const handleStartRound = () => {
+    if (start.reset) {
+      localStorage.removeItem("roundResult");
+      localStorage.removeItem("userLife");
+      localStorage.removeItem("computerLife");
+      setRoundResults(() => {
+        return JSON.parse(localStorage.getItem("roundResult") || "[]");
+      });
+      setRoundResult((prev) => {
+        return {
+          ...prev,
+          computerInput: "",
+          userInput: "",
+          result: null,
+        };
+      });
+      setUserLife(3);
+      setComputerLife(3);
+      setStart((prev) => {
+        return {
+          ...prev,
+          isStart: false,
+          isReStart: false,
+          reset: false,
+        };
+      });
+      setInputValues((prev) => {
+        return {
+          ...prev,
+          computer: { input: null, image: null },
+          user: { input: null, image: null },
+        };
+      });
+      return;
+    }
+    if (!inputValues.user.input) {
+      window.alert("'가위/바위/보' 중 하나를 선택해주세요!");
+      return;
+    }
+    setStart((prev) => {
+      return { ...prev, isStart: true };
+    });
+    setInputValues((prev) => {
+      return {
+        ...prev,
+        computer: { input: null, image: null },
+      };
+    });
+  };
+  /** Round Result 변경 기록 저장 */
+  useEffect(() => {
+    if (roundResult.result)
+      setRoundResults((prev) => {
+        return [...prev, roundResult];
+      });
+    if (roundResult.result === "Win") {
+      setComputerLife((prev) => prev - 1);
+    } else if (roundResult.result === "Lose") {
+      setUserLife((prev) => prev - 1);
+    }
+  }, [roundResult]);
+  /** localStorage state update */
+  useEffect(() => {
+    localStorage.setItem("roundResult", JSON.stringify(roundResults));
+    localStorage.setItem("userLife", JSON.stringify(userLife));
+    localStorage.setItem("computerLife", JSON.stringify(computerLife));
 
-  /** 지영: 대결 / 재대결 버튼 클릭시 실행 Hook */
-  /** 지영: useCallback 을 적용해도 되지 않을까? - 리팩토링 */
+    if (userLife === 0) {
+      window.alert("컴퓨터가 승리하였습니다.");
+    } else if (computerLife === 0) {
+      window.alert("당신이 승리하였습니다.");
+    }
+  }, [roundResults]);
+  /** 경기 종료 여부 확인 */
+  useEffect(() => {
+    if (!userLife || !computerLife) {
+      setStart((prev) => {
+        return { ...prev, reset: true };
+      });
+    }
+  }, [userLife, computerLife]);
+  /** : 대결 / 재대결 버튼 클릭시 실행 */
   useEffect(() => {
     if (start.isStart) {
       const id = setTimeout(() => {
@@ -39,10 +140,11 @@ function App() {
       }, 1000);
       if (remainingTime === 0) {
         clearInterval(id);
-        /** 지영: 재대결 state 변경 - 따로 빼야할까? */
+        /** 재대결 state 변경 */
         setStart((prev) => {
           return { ...prev, isReStart: true };
         });
+        setRemainingTime(() => 3);
       }
       return () => clearInterval(id);
     }
@@ -56,7 +158,9 @@ function App() {
        * ROUND는 localStorage로 관리되어야 하고
        * 게임의 결과가 나올 때마다 1씩 증가한다.
        */}
-      <Styled.BattleRoundTitle>ROUND: 3</Styled.BattleRoundTitle>
+      <Styled.BattleRoundTitle>
+        ROUND: {roundResults.length}
+      </Styled.BattleRoundTitle>
       <Styled.BattleGround>
         {/*
          * TODO: 라운드 종료 / 경기 종료 - 생명수 차감
@@ -70,7 +174,15 @@ function App() {
          * 경기가 종료되면 window.alert 메소드를 활용하여
          * "<컴퓨터가 / 당신이> 승리하였습니다." 를 띄워야합니다.
          */}
-        <BattleCounter activeLife={2} />
+        <BattleCounter
+          activeLife={userLife}
+          inputValues={inputValues}
+          setRoundResult={setRoundResult}
+          setInputValues={setInputValues}
+          setStart={setStart}
+          start={start}
+          // setActiveLife={setActiveLife}
+        />
         {/*
          * TODO: 라운드 종료 / 경기 종료 - 게임 시작 버튼
          *
@@ -80,13 +192,22 @@ function App() {
          * 사용자가 재경기 버튼을 클릭하면 'READY'로 변경되어야 합니다.
          */}
         <Styled.CountDownNumber>
-          {start.isStart ? remainingTime : "READY"}
+          {start.isStart
+            ? remainingTime
+            : !start.isStart && roundResult.result
+            ? roundResult.result
+            : "READY"}
         </Styled.CountDownNumber>
         <BattleCounter
-          activeLife={1}
+          activeLife={computerLife}
           isComputer
           remainingTime={remainingTime}
+          inputValues={inputValues}
           setRoundResult={setRoundResult}
+          setInputValues={setInputValues}
+          setStart={setStart}
+          start={start}
+          // setActiveLife={setActiveLife}
         />
       </Styled.BattleGround>
       {/*
@@ -108,13 +229,14 @@ function App() {
        * 최초의 상태로 리셋이 되어야 합니다.
        */}
       <Styled.GameControlButton
-        onClick={() =>
-          setStart((prev) => {
-            return { ...prev, isStart: true };
-          })
-        }
+        result={start.reset ? "reset" : ""}
+        onClick={handleStartRound}
       >
-        {start.isReStart ? "재대결하기" : "대결!"}
+        {start.reset
+          ? "다시 시작하기"
+          : !start.isStart && start.isReStart
+          ? "재대결하기"
+          : "대결"}
       </Styled.GameControlButton>
       {/*
        * TODO: 라운드 종료 - 결과
@@ -126,9 +248,10 @@ function App() {
        * 패배 #ffc8c1
        * 무승부 #f7f7f7
        */}
-      <BattleResultInfo />
-      <BattleResultInfo />
-      <BattleResultInfo />
+      {/* 결과도 나와야 하니까 배열에 string이 아니라 객체가 들어가야함 */}
+      {roundResults.map((result, idx) => (
+        <BattleResultInfo result={result} key={idx} />
+      ))}
     </Styled.Container>
   );
 }
