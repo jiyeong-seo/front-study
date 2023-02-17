@@ -50,7 +50,7 @@ function App() {
   const [computerLife, setComputerLife] = useState<number>(
     JSON.parse(localStorage.getItem("computerLife") || "3")
   );
-  /** 대결 버튼 클릭시 실행 handler */
+  /** 대결 버튼 클릭시 실행 핸들러 */
   const handleStartRound = () => {
     if (start.reset) {
       localStorage.removeItem("roundResult");
